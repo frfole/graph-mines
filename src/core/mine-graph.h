@@ -26,6 +26,7 @@ typedef enum {
 typedef struct {
 	int input_count;
 	node_state* inner_node_states;
+	int* flag_states;
 	int* input2inner;
 	edge_type* input_conn;
 	edge_type* inner_conn;
@@ -50,7 +51,5 @@ void _graph_set_known(mine_graph* graph, int inner_idx);
 void graph_set_known(mine_graph* graph, int input_idx);
 
 void graph_build(mine_graph* graph);
-void graph_unbuild(mine_graph* graph);
-void graph_rebuild(mine_graph* graph);
 
 #endif

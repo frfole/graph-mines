@@ -17,8 +17,7 @@ mine_2d mine2d_create(int height, int width, int mine_count, mine2d_kernel kerne
 				for (int dx = 0; dx < kernel.w; dx++) {
 					if (y + dy - kernel.oy < 0 || y + dy - kernel.oy >= inst.height) continue;
 					if (x + dx - kernel.ox < 0 || x + dx - kernel.ox >= inst.width) continue;
-					int kdata = kernel.data[dy * kernel.w + dx];
-					if (kdata == 1) {
+					if (kernel.data[dy * kernel.w + dx] == 1) {
 						graph_add_edge(&inst.graph, LAYER_INPUT, y * inst.width + x, (y + dy - kernel.oy) * inst.width + x + dx - kernel.ox, EDGE_WEAK);
 					}
 				}
