@@ -21,11 +21,12 @@ typedef struct {
 	int height;
 	int width;
 	int mines;
+	int kernel_idx;
 	mine2d_kernel kernel;
 } term_m_new;
 
 void term_mines_start();
-term_m_new term_mines_new();
-void term_mines_game(_term_state* state);
+term_m_new term_mines_new(term_m_new* prev_conf, int regen);
+void term_mines_game(_term_state* state, int mines);
 
 #endif

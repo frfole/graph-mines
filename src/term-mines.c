@@ -33,6 +33,12 @@ void term_mines_start() {
 		init_pair(6, 16, COLOR_BLACK);
 	}
 
+	term_m_new game_conf = {
+		.height = 40,
+		.width = 40,
+		.mines = 150,
+		.kernel_idx = 0,
+	};
 	_term_state state = {
 		.is_running = 1,
 		.has_game = 0,
@@ -42,11 +48,11 @@ void term_mines_start() {
 	};
 	do {
 		if (!state.has_game) {
-			term_m_new game_conf = term_mines_new();
+			game_conf = term_mines_new(&game_conf, 0);
 			state.game = mine2d_create(game_conf.height, game_conf.width, game_conf.mines, game_conf.kernel);
 			state.has_game = 1;
 			state.lost = 0;
-			term_mines_game(&state);
+			term_mines_game(&state, game_conf.mines);
 		}
 		int c = getch();
 		if (c == 'q') state.is_running = 0;
@@ -60,11 +66,11 @@ void term_mines_start() {
 			if (mine2d_get_state(&state.game, state.cx, state.cy).type == NODE_MINE) {
 				state.lost = 1;
 			}
-		} else if (c == 'n') {
+		} else if (c == 'n' || c == 'g') {
 			if (state.has_game) {
 				mine2d_free(&state.game);
 			}
-			term_m_new game_conf = term_mines_new();
+			game_conf = term_mines_new(&game_conf, c == 'g');
 			state.game = mine2d_create(game_conf.height, game_conf.width, game_conf.mines, game_conf.kernel);
 			state.has_game = 1;	
 			state.lost = 0;
@@ -78,7 +84,7 @@ void term_mines_start() {
 		else if (state.cy >= state.game.height) state.cy = state.game.height * 1 - 1;
 
 		// draw game
-		term_mines_game(&state);
+		term_mines_game(&state, game_conf.mines);
 	} while(state.is_running);
 
 	// freee things we used
@@ -88,7 +94,7 @@ void term_mines_start() {
 	endwin();
 }
 
-term_m_new term_mines_new() {
+term_m_new term_mines_new(term_m_new* prev_conf, int regen) {
 	term_kernel term_kernels[] = {
 		{.name = "basic", .kernel = mine2d_kernel_create(3, 3, 1, 1, (int[]) {
 				1, 1, 1,
@@ -114,13 +120,16 @@ term_m_new term_mines_new() {
 		}
 	};
 
-	int selected_kernel = 0;
-	int selected_height = 40;
-	int selected_width = 40;
-	int selected_mines = 150;
+	int selected_kernel = prev_conf->kernel_idx;
+	int selected_height = prev_conf->height;
+	int selected_width = prev_conf->width;
+	int selected_mines = prev_conf->mines;
 	int selected_field = 0;
 	char line[32];
+	attrset(COLOR_PAIR(1));
 	do {
+		if (regen)
+			break;
 		clear();
 		// draw all fields and theirs value
 		sprintf(line, "  height: %d", selected_height);
@@ -190,11 +199,12 @@ term_m_new term_mines_new() {
 		.height = selected_height,
 		.width = selected_width,
 		.mines = selected_mines,
+		.kernel_idx = selected_kernel,
 		.kernel = term_kernels[selected_kernel].kernel,
 	};
 }
 
-void term_mines_game(_term_state* state) {
+void term_mines_game(_term_state* state, int mines) {
 	if (state->has_game) {
 		clear();
 		int flag_count = 0;
@@ -241,13 +251,14 @@ void term_mines_game(_term_state* state) {
 		}
 
 		// draw game status
-		move(state->game.height + 1, state->game.width);
 		sprintf(buf, "flags: % 3d, unknown nodes: %-6d", flag_count, unknown_count);
-		addstr(buf);
+		mvaddstr(state->game.height + 1, state->game.width, buf);
 		if (exposed_mines > 0 || state->lost) {
-			move(state->game.height + 3, state->game.width - 6);
 			attrset(COLOR_PAIR(5));
-			addstr("Mine exposed");
+			mvaddstr(state->game.height + 3, state->game.width - 6, "Mine exposed");
+		} else if (flag_count + unknown_count == mines) {
+			attrset(COLOR_PAIR(3));
+			mvaddstr(state->game.height + 3, state->game.width - 3, "YOU WON");
 		}
 
 		// move cursor to current field
